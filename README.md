@@ -15,6 +15,11 @@ This is the problem Notion Gister tries to solve. Notion Gister if integrated wi
 
 Just like anything I build, it is very barebones at the expense of extensibility. Almost evert aspect of gister can be configured via `.gister.yaml`.
 
+## Prerequisites
+1. Notion API Keys (Refer - https://developers.notion.com/)
+2. Ensure Notion Integration is linked with the databases that you need to access via gister.
+3. SMTP relay API. I use Mailjet, their free offering is more than enough for my needs.
+
 ## Gister Config Guide
 Gister config has to be named `.gister.yaml` and needs to be in the same directory where gister is running. 
 
