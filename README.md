@@ -19,7 +19,7 @@ Just like anything I build, it is very barebones at the expense of extensibility
 Gister config has to be named `.gister.yaml` and needs to be in the same directory where gister is running. 
 
 ```yaml
-# apiKey is the Notion API Key
+# apiKey is the Notion API Key (Can be given via GISTER_APIKEY as well)
 apiKey: sadfsdfwefrwerf
 
 # executor can be either "cron" or "none". If nothing is provided, "none" is assumed
