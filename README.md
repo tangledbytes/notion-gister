@@ -36,9 +36,9 @@ mail:
   # Default SMTP related config
   smtp:
     username: asbc # Username for SMTP relay (Alternatively can be set via env var GISTER_SMTP_USERNAME)
-	password: absdf # Password for SMPT relay (Alternatively can be set via env var GISTER_SMTP_PASSWORD)
-	host: smpt.example.com # SMTP Host (Alternatively can be set via env var GISTER_SMPT_HOST)
-	port: "25" # SMTP Port - Has to be a string (Alternatively can be set via env var GISTER_SMPT_PORT) 
+    password: absdf # Password for SMPT relay (Alternatively can be set via env var GISTER_SMTP_PASSWORD)
+    host: smpt.example.com # SMTP Host (Alternatively can be set via env var GISTER_SMPT_HOST)
+    port: "25" # SMTP Port - Has to be a string (Alternatively can be set via env var GISTER_SMPT_PORT) 
   from: <example@example.com> # Default mail sender ID
 
   # Default mail recivers
@@ -69,17 +69,17 @@ mail:
 db:
   - id: abc1234 # ID of the notion database - REQUIRED
     name: abcwe # Name of the database (could be anything) - REQUIRED
-	cron: 0 12 * * * #  The times when the gister should kick in - REQUIRED
-	notion:
-	  # filterJSON is also Go Template (refer - https://developers.notion.com/reference/post-database-query-filter)
-	  # Template receives values like "yesterday", "today", "tomorrow"
-	  filterJSON:
-	  # sortJSON is also Go Template (refer - https://developers.notion.com/reference/post-database-query-sort)
-	  # Template receives values like "today"
-	  sortJSON:
-	# This mail has the same structure as the global mail but is specific to this DB,
-	# therefore mail subject, body, senders, receiver, smpt relay everything can be overridden here
-	mail:
+    cron: 0 12 * * * #  The times when the gister should kick in - REQUIRED
+    notion:
+      # filterJSON is also Go Template (refer - https://developers.notion.com/reference/post-database-query-filter)
+      # Template receives values like "yesterday", "today", "tomorrow"
+      filterJSON:
+      # sortJSON is also Go Template (refer - https://developers.notion.com/reference/post-database-query-sort)
+      # Template receives values like "today"
+      sortJSON:
+    # This mail has the same structure as the global mail but is specific to this DB,
+    # therefore mail subject, body, senders, receiver, smpt relay everything can be overridden here
+    mail:
 ```
 
 Apart from the config, environment variables can be used as well with prefix GISTER.
