@@ -76,8 +76,6 @@ func (m *Mailer) sendMail(subject, message string) error {
 
 	content := createContent(m.From, m.To, subject, message)
 
-	logrus.Info("Sending:\n", content)
-
 	conn, err := tls.Dial("tcp", m.Host+":"+m.Port, &tls.Config{
 		InsecureSkipVerify: true,
 		ServerName:         m.Host,
@@ -125,6 +123,7 @@ func (m *Mailer) sendMail(subject, message string) error {
 		return fmt.Errorf("failed to quit: %w", err)
 	}
 
+	logrus.Infof("Mail sent with subject %q to %s", subject, strings.Join(m.To, ", "))
 	return nil
 }
 

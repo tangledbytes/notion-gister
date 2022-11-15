@@ -1,6 +1,8 @@
 package config
 
 import (
+	"time"
+
 	"github.com/spf13/viper"
 	"github.com/utkarsh-pro/notion-gister/pkg/utils"
 )
@@ -23,4 +25,19 @@ func Setup() {
 
 func prefixed(key string) string {
 	return EnvPrefix + "_" + key
+}
+
+func Timezone() *time.Location {
+	tz := utils.ViperReturnFirstFound[string]("timezone")
+
+	if tz == "" {
+		tz = "UTC"
+	}
+
+	loc, err := time.LoadLocation(tz)
+	if err != nil {
+		loc, _ = time.LoadLocation("UTC")
+	}
+
+	return loc
 }

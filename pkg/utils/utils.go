@@ -1,6 +1,12 @@
 package utils
 
-import "github.com/spf13/viper"
+import (
+	"encoding/json"
+	"fmt"
+	"time"
+
+	"github.com/spf13/viper"
+)
 
 func PanicIfError(err error) {
 	if err != nil {
@@ -45,4 +51,30 @@ func ForEach[T any](slice []T, fn func(T)) {
 	for _, v := range slice {
 		fn(v)
 	}
+}
+
+func PrettyPrint(v interface{}) {
+	byt, err := json.MarshalIndent(v, "", "  ")
+	if err != nil {
+		return
+	}
+
+	fmt.Println(string(byt))
+}
+
+func PrettyTime(t time.Time) string {
+	return TimeInLocalZone(t, time.RFC1123)
+}
+
+func TimeInLocalZone(t time.Time, layout string) string {
+	return TimeInZone(t, viper.GetString("timezone"), layout)
+}
+
+func TimeInZone(t time.Time, zone string, layout string) string {
+	loc, err := time.LoadLocation(zone)
+	if err != nil {
+		loc = time.UTC
+	}
+
+	return t.In(loc).Format(layout)
 }

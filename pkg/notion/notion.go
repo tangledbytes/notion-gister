@@ -3,12 +3,15 @@ package notion
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"strconv"
 	"strings"
 	"text/template"
 	"time"
 
 	gnotion "github.com/dstotijn/go-notion"
 	"github.com/sirupsen/logrus"
+	"github.com/utkarsh-pro/notion-gister/pkg/utils"
 )
 
 // Notion is a wrapper around the go-notion client with some
@@ -73,8 +76,8 @@ func (n *Notion) ReadDBItems(
 	id string,
 	filterTemplate,
 	sortTemplate string,
-) ([]DBItem, error) {
-	var items []DBItem
+) ([]map[string]string, error) {
+	var items []map[string]string
 
 	filter, err := createFilterFromJSON(filterTemplate)
 	if err != nil {
@@ -86,12 +89,7 @@ func (n *Notion) ReadDBItems(
 		return nil, err
 	}
 
-	result, err := n.QueryDatabaseLoadAll(
-		ctx,
-		id,
-		filter,
-		sorts,
-	)
+	result, err := n.QueryDatabaseLoadAll(ctx, id, filter, sorts)
 	if err != nil {
 		return nil, err
 	}
@@ -103,19 +101,15 @@ func (n *Notion) ReadDBItems(
 			continue
 		}
 
-		item := DBItem{
-			id:          page.ID,
-			createdTime: page.CreatedTime,
-			url:         page.URL,
-			title:       "",
+		item := map[string]string{
+			"__id":             page.ID,
+			"__createdTime":    utils.PrettyTime(page.CreatedTime),
+			"__lastEditedTime": utils.PrettyTime(page.LastEditedTime),
+			"__url":            page.URL,
 		}
 
-		for _, title := range props["Name"].Title {
-			item.title += title.PlainText
-		}
-
-		for _, tags := range props["Tags"].MultiSelect {
-			item.tags = append(item.tags, tags.Name)
+		for name, prop := range props {
+			item[name] = stringifyNotionProperty(prop)
 		}
 
 		items = append(items, item)
@@ -178,4 +172,192 @@ func createSortFromJSON(sortTemplate string) ([]gnotion.DatabaseQuerySort, error
 	}
 
 	return s, nil
+}
+
+func stringifyNotionProperty(prop gnotion.DatabasePageProperty) string {
+	switch prop.Type {
+	case gnotion.DBPropTypeTitle:
+		var title string
+		for _, text := range prop.Title {
+			title += text.PlainText
+		}
+
+		return title
+	case gnotion.DBPropTypeRichText:
+		var rtext string
+		for _, text := range prop.RichText {
+			rtext += text.PlainText
+		}
+
+		return rtext
+	case gnotion.DBPropTypeNumber:
+		if prop.Number == nil {
+			return ""
+		}
+
+		return strconv.FormatFloat(*prop.Number, 'f', -1, 64)
+	case gnotion.DBPropTypeSelect:
+		if prop.Select == nil {
+			return ""
+		}
+
+		return prop.Select.Name
+	case gnotion.DBPropTypeMultiSelect:
+		var mselect []string
+		for _, selectOption := range prop.MultiSelect {
+			mselect = append(mselect, selectOption.Name)
+		}
+
+		return strings.Join(mselect, ", ")
+	case gnotion.DBPropTypeDate:
+		if prop.Date == nil {
+			return ""
+		}
+
+		return stringifyNotionDate(prop.Date)
+	case gnotion.DBPropTypePeople:
+		var people []string
+		for _, person := range prop.People {
+			people = append(people, person.Name)
+		}
+
+		return strings.Join(people, ", ")
+	case gnotion.DBPropTypeFiles:
+		// won't support
+		return ""
+	case gnotion.DBPropTypeCheckbox:
+		if prop.Checkbox == nil {
+			return ""
+		}
+
+		return strconv.FormatBool(*prop.Checkbox)
+	case gnotion.DBPropTypeURL:
+		if prop.URL == nil {
+			return ""
+		}
+
+		return *prop.URL
+	case gnotion.DBPropTypeEmail:
+		if prop.Email == nil {
+			return ""
+		}
+
+		return *prop.Email
+	case gnotion.DBPropTypePhoneNumber:
+		if prop.PhoneNumber == nil {
+			return ""
+		}
+
+		return *prop.PhoneNumber
+	case gnotion.DBPropTypeStatus:
+		if prop.Status == nil {
+			return ""
+		}
+
+		return prop.Status.Name
+	case gnotion.DBPropTypeFormula:
+		if prop.Formula == nil {
+			return ""
+		}
+
+		switch prop.Formula.Type {
+		case gnotion.FormulaResultTypeNumber:
+			if prop.Formula.Number == nil {
+				return ""
+			}
+
+			return strconv.FormatFloat(*prop.Formula.Number, 'f', -1, 64)
+		case gnotion.FormulaResultTypeString:
+			if prop.Formula.String == nil {
+				return ""
+			}
+
+			return *prop.Formula.String
+		case gnotion.FormulaResultTypeDate:
+			if prop.Formula.Date == nil {
+				return ""
+			}
+
+			return stringifyNotionDate(prop.Formula.Date)
+		default:
+			return ""
+		}
+	case gnotion.DBPropTypeRelation:
+		// won't support
+		return ""
+	case gnotion.DBPropTypeRollup:
+		switch prop.Rollup.Type {
+		case gnotion.RollupResultTypeNumber:
+			if prop.Rollup.Number == nil {
+				return ""
+			}
+
+			return strconv.FormatFloat(*prop.Rollup.Number, 'f', -1, 64)
+		case gnotion.RollupResultTypeArray:
+			var array []string
+			for _, item := range prop.Rollup.Array {
+				array = append(array, stringifyNotionProperty(item))
+			}
+
+			return strings.Join(array, ",")
+		case gnotion.RollupResultTypeDate:
+			if prop.Rollup.Date == nil {
+				return ""
+			}
+
+			return stringifyNotionDate(prop.Rollup.Date)
+		case gnotion.RollupResultTypeUnsupported:
+			return "[Unsupported]"
+		case gnotion.RollupResultTypeIncomplete:
+			return "[Incomplete]"
+		default:
+			return ""
+		}
+	case gnotion.DBPropTypeCreatedTime:
+		if prop.CreatedTime == nil {
+			return ""
+		}
+
+		return utils.PrettyTime(*prop.CreatedTime)
+	case gnotion.DBPropTypeCreatedBy:
+		if prop.CreatedBy == nil {
+			return ""
+		}
+
+		return prop.CreatedBy.Name
+	case gnotion.DBPropTypeLastEditedTime:
+		if prop.LastEditedTime == nil {
+			return ""
+		}
+
+		return utils.PrettyTime(*prop.LastEditedTime)
+	case gnotion.DBPropTypeLastEditedBy:
+		if prop.LastEditedBy == nil {
+			return ""
+		}
+
+		return prop.LastEditedBy.Name
+	default:
+		return ""
+	}
+}
+
+func stringifyNotionDate(date *gnotion.Date) string {
+	if date == nil {
+		return ""
+	}
+
+	if date.TimeZone == nil {
+		if date.End == nil {
+			return utils.PrettyTime(date.Start.Time)
+		}
+
+		return fmt.Sprintf("%s - %s", utils.PrettyTime(date.Start.Time), utils.PrettyTime(date.End.Time))
+	}
+
+	return fmt.Sprintf(
+		"%s - %s",
+		utils.TimeInZone(date.Start.Time, *date.TimeZone, time.RFC1123),
+		utils.TimeInZone(date.End.Time, *date.TimeZone, time.RFC1123),
+	)
 }
