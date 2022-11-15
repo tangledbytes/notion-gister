@@ -1,0 +1,81 @@
+db:
+  - id: xyz123
+    name: DB Name 1
+    cron: "0 8 * * *"
+    notion:
+      sortJSON: |
+        [
+          {
+            "property": "Created At",
+            "direction": "ascending"
+          }
+        ]
+  - id: abcdefgh
+    name: Today's Schedule
+    cron: "0 8 * * *"
+    mail:
+      subject: "[Notion Gister] Schedule for {{.date}}" # Override default subject
+      # Override default body
+      body: |
+        <p>Gist for "{{.dbname}}"</p>
+        <p>Generated at {{.time}}</p>
+
+        <p>These are the scheduled items for today</p>
+
+        <p>---</p>
+        {{ range $i, $item := .notion }}
+          <p>
+            <a href="{{ $item.__url }}">{{ $item.Name }} - {{ $item.Time }}</a>
+          </p>
+        {{ end }}
+    notion:
+      sortJSON: |
+        [
+          {
+            "property": "Date",
+            "direction": "ascending"
+          }
+        ]
+      filterJSON: |
+        {
+          "and": [
+            {
+              "property": "Date",
+              "date": {
+                "on_or_after": "{{.today}}"
+              }
+            },
+            {
+              "property": "Date",
+              "date": {
+                "on_or_before": "{{.tomorrow}}"
+              }
+            }
+          ]
+        }
+mail:
+  from: <notion-gister@app.sagacious.dev>
+  to:
+    - utkarsh@sagacious.dev
+  subject: "[Notion Gister] Gist for \"{{.dbname}}\" for {{.date}}"
+  body: |
+    <p>Gist for "{{.dbname}}"</p>
+    <p>Generated at {{.time}}</p>
+
+    <p>
+      The following is a list of items that needs be reviewed. please take action 
+      on these items as soon as possible. if an item has been completed, either 
+      delete it from the database or attach a tag named "gister:ignore".
+    </p>
+    
+    <p>Notion Gister will send a reminder again tomorrow.</p>
+
+    <p>---</p>
+    {{ range $i, $item := .notion }}
+      <p>
+        <a href="{{ $item.__url }}">{{ $item.Name }} ({{ $item.__createdTime }})</a>
+      </p>
+    {{ end }}
+
+timezone: Asia/Kolkata # Timezone to be used for rendering dates and times
+executor: cron # cron or none or empty
